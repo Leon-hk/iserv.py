@@ -29,8 +29,9 @@ from bs4 import BeautifulSoup
 import datetime
 
 from .errors import *
-from .task import Task
+from .task import LiteTask, Task, TextTask, FileTask, BoolTask
 from .iservfile import IServFile
+from .user import LiteUser
 
 class Client:
     r"""Dies ist die Verbindung zum IServ.
@@ -91,39 +92,48 @@ class Client:
             response = self.session.get(self.url + "iserv/exercise/show/" + str(id), headers=self._headers)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "lxml")
-                title = soup.find("h1").text
+                title = soup.find("span", {"class": "bc breadcrumb-current"}).text
+                trs = soup.find("tbody", {"class": "bb0"}).find_all("tr")
                 description = soup.find("td", {"class": "text-break-word"})
                 if description.find("div") is None:
                     description = description.text[1:-1]
                 else:
                     description = description.text[2:-2]
-                teacher = None
-                start = datetime.datetime.strptime(soup.find_all("td")[1].text, '%d.%m.%Y %H:%M')
-                end = datetime.datetime.strptime(soup.find_all("td")[2].text, '%d.%m.%Y %H:%M')
+                teachername = trs[0].find("td").text
+                if teachername.__contains__(","):
+                    split = teachername.split(", ")
+                    teacher = LiteUser(split[1] + " " + split[0], trs[0].find("td").find("a")["href"].split(":")[1].split("@")[0], trs[0].find("td").find("a")["href"].split(":")[1].split("?")[0], firstname=split[1], lastname=split[0], client=self)
+                else:
+                    teacher = LiteUser(teachername, trs[0].find("td").find("a")["href"].split(":")[1].split("@")[0], trs[0].find("td").find("a")["href"].split(":")[1].split("?")[0], client=self)
+                start = datetime.datetime.strptime(trs[1].find("td").text, '%d.%m.%Y %H:%M')
+                end = datetime.datetime.strptime(trs[2].find("td").text, '%d.%m.%Y %H:%M')
                 tags = []
-                for a in soup.find_all("td")[3].find_all("a"):
+                for a in trs[3].find("td").find_all("a"):
                     tags.append(a.text[1:])
                 done = None
                 feedback = None
                 attachments = []
-                for a in soup.find("table", {"class": "table table-condensed mt0"}).find("tbody").find_all("tr"):
-                    tds = a.find_all("td")
-                    name = tds[0].text
-                    url = self.url + tds[0].find("a")["href"][1:]
-                    size = tds[1].text
-                    if size.__contains__(" KB"):
-                        raw_size = int(float(size[:-3])*1000)
-                    elif size.__contains__(" MB"):
-                        raw_size = int(float(size[:-3])*1000000)
-                    elif size.__contains__(" Bytes"):
-                        raw_size = int(size[:-6])
-                    elif size.__contains__(" GB"):
-                        raw_size = int(float(size[:-3])*1000000000)
-                    else:
-                        raw_size = 0
-                    attachments.append(IServFile(name, url, raw_size, size, None))
+                table = soup.find("table", {"class": "table table-condensed mt0"})
+                if table:
+                    for a in table.find("tbody").find_all("tr"):
+                        tds = a.find_all("td")
+                        name = tds[0].text
+                        url = self.url + tds[0].find("a")["href"][1:]
+                        size = tds[1].text
+                        if size.__contains__(" KB"):
+                            raw_size = int(float(size[:-3])*1000)
+                        elif size.__contains__(" MB"):
+                            raw_size = int(float(size[:-3])*1000000)
+                        elif size.__contains__(" Bytes"):
+                            raw_size = int(size[:-6])
+                        elif size.__contains__(" GB"):
+                            raw_size = int(float(size[:-3])*1000000000)
+                        else:
+                            raw_size = 0
+                        attachments.append(IServFile(name, url, raw_size, size, None))
                 return Task(title, description, teacher, id, start, end, tags, done, feedback, attachments)
             else:
                 return None
         except:
+            raise
             return None

@@ -24,8 +24,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-class Task:
-    """Eine IServ Aufgabe
+class LiteTask:
+    """Die Lite-Klasse der Klasse :class:`Task`. Sie enthält nur Grundlegende Informationen der Aufgabe, um die volle Aufgabe zu bekommen ``task()`` ausführen.
+
+    Attributes
+    -----------
+    title: :class:`str`
+        Der Aufgabentitel, der in der Vorschau steht.
+    id: :class:`int`
+        Die Aufgaben ID.
+    start: :class:`datetime.datetime`
+        Der Starttermin der Aufgabe.
+    end: :class:`datetime.datetime`
+        Der Abgabetermin der Aufgabe.
+    tags: List[:class:`str`]
+        Eine Liste mit den Tags der Aufgabe.
+    done: :class:`bool`
+        ``True`` wenn die Aufgabe erledigt ist,
+        ``False`` wenn sie noch nicht erledigt wurde.
+    feedback: :class:`bool`
+        ``True`` wenn eine Rückmeldung erfolgt ist,
+        ``False`` wenn keine Rückmeldung erfolgt ist.
+    """
+
+    def __init__(self, title, id, start, end, tags, done, feedback, client=None):
+        self.title = title
+        self.id = id
+        self.start = start
+        self.end = end
+        self.tags = tags
+        self.done = done
+        self.feedback = feedback
+        self._client = client
+
+    def task(self):
+        return self._client.get_task(self.id)
+
+
+class Task(LiteTask):
+    """Eine IServ Aufgabe, diese kann vom Typ :class:`FileTask` oder :class:`TextTask` sein.
 
     Attributes
     -----------
@@ -33,8 +70,8 @@ class Task:
         Der Aufgabentitel, der in der Vorschau steht.
     description: :class:`str`
         Die ausführliche Aufgabenbeschreibung.
-    teacher: :class:`User`
-        Der `User` des Lehrers, der die Aufgabe erstellt hat.
+    teacher: :class:`LiteUser`
+        Der `LiteUser` des Lehrers, der die Aufgabe erstellt hat.
     id: :class:`int`
         Die Aufgaben ID.
     start: :class:`datetime.datetime`
@@ -54,19 +91,122 @@ class Task:
     """
 
     def __init__(self, title, description, teacher, id, start, end, tags, done, feedback, attachments):
-        self.title = title
         self.description = description
         self.teacher = teacher
-        self.id = id
-        self.start = start
-        self.end = end
-        self.tags = tags
-        self.done = done
-        self.feedback = feedback
         self.attachments = attachments
+        super().__init__(title, id, start, end, tags, done, feedback)
+
+
+class TextTask(Task):
+    """Eine :class:`Task`, bei der die Abgabe in Form eines Textes erfolgt
+
+    Attributes
+    -----------
+    title: :class:`str`
+        Der Aufgabentitel, der in der Vorschau steht.
+    description: :class:`str`
+        Die ausführliche Aufgabenbeschreibung.
+    teacher: :class:`User`
+        Der `User` des Lehrers, der die Aufgabe erstellt hat.
+    id: :class:`int`
+        Die Aufgaben ID.
+    start: :class:`datetime.datetime`
+        Der Starttermin der Aufgabe.
+    end: :class:`datetime.datetime`
+        Der Abgabetermin der Aufgabe.
+    tags: List[:class:`str`]
+        Eine Liste mit den Tags der Aufgabe.
+    done: :class:`str`
+        ``str`` mit dem abgegebenen Text, wenn die Aufgabe erledigt ist,
+        ``None`` wenn sie noch nicht erledigt wurde.
+    feedback: :class:`Feedback`
+        ``Feedback`` wenn eine Rückmeldung gegeben wurde,
+        ``None`` wenn keine Rückmeldung gegeben wurde.
+    attachments: List[:class:`IServFile`]
+        Eine Liste der sich im Anhang befindlichen Dateien in Form von `IServFile`s.
+    """
+
+    def __init__(self, title, description, teacher, id, start, end, tags, done, feedback, attachments):
+        super().__init__(title, description, teacher, id, start, end, tags, done, feedback, attachments)
 
     def __repr__(self):
-        return '<iserv.Task title="%s" id=%s>' % (self.title, self.id)
+        return '<iserv.TextTask title="%s" id=%s>' % (self.title, self.id)
 
     def __str__(self):
-        return '<iserv.Task title="%s" id=%s>' % (self.title, self.id)
+        return '<iserv.TextTask title="%s" id=%s>' % (self.title, self.id)
+
+class FileTask(Task):
+    """Eine :class:`Task`, bei der die Abgabe in Form eines Textes erfolgt
+
+    Attributes
+    -----------
+    title: :class:`str`
+        Der Aufgabentitel, der in der Vorschau steht.
+    description: :class:`str`
+        Die ausführliche Aufgabenbeschreibung.
+    teacher: :class:`User`
+        Der `User` des Lehrers, der die Aufgabe erstellt hat.
+    id: :class:`int`
+        Die Aufgaben ID.
+    start: :class:`datetime.datetime`
+        Der Starttermin der Aufgabe.
+    end: :class:`datetime.datetime`
+        Der Abgabetermin der Aufgabe.
+    tags: List[:class:`str`]
+        Eine Liste mit den Tags der Aufgabe.
+    done: List[:class:`IServFile`]
+        List[:class:`IServFile`] mit den abgegebenen Dateien, wenn die Aufgabe erledigt ist,
+        ``None`` wenn sie noch nicht erledigt wurde.
+    feedback: :class:`Feedback`
+        ``Feedback`` wenn eine Rückmeldung gegeben wurde,
+        ``None`` wenn keine Rückmeldung gegeben wurde.
+    attachments: List[:class:`IServFile`]
+        Eine Liste der sich im Anhang befindlichen Dateien in Form von `IServFile`s.
+    """
+
+    def __init__(self, title, description, teacher, id, start, end, tags, done, feedback, attachments):
+        super().__init__(title, description, teacher, id, start, end, tags, done, feedback, attachments)
+
+    def __repr__(self):
+        return '<iserv.FileTask title="%s" id=%s>' % (self.title, self.id)
+
+    def __str__(self):
+        return '<iserv.FileTask title="%s" id=%s>' % (self.title, self.id)
+
+class BoolTask(Task):
+    """Eine :class:`Task`, bei der die Abgabe in Form von Ja/Nein erfolgt
+
+    Attributes
+    -----------
+    title: :class:`str`
+        Der Aufgabentitel, der in der Vorschau steht.
+    description: :class:`str`
+        Die ausführliche Aufgabenbeschreibung.
+    teacher: :class:`User`
+        Der `User` des Lehrers, der die Aufgabe erstellt hat.
+    id: :class:`int`
+        Die Aufgaben ID.
+    start: :class:`datetime.datetime`
+        Der Starttermin der Aufgabe.
+    end: :class:`datetime.datetime`
+        Der Abgabetermin der Aufgabe.
+    tags: List[:class:`str`]
+        Eine Liste mit den Tags der Aufgabe.
+    done: :class:`bool`
+        ``True`` wenn die Aufgabe mit "Ja" bestätigt wurde,
+        ``False`` wenn sie noch nicht bestätigt wurde.
+    feedback: :class:`Feedback`
+        ``Feedback`` wenn eine Rückmeldung gegeben wurde,
+        ``None`` wenn keine Rückmeldung gegeben wurde.
+    attachments: List[:class:`IServFile`]
+        Eine Liste der sich im Anhang befindlichen Dateien in Form von `IServFile`s.
+    """
+
+    def __init__(self, title, description, teacher, id, start, end, tags, done, feedback, attachments):
+        super().__init__(title, description, teacher, id, start, end, tags, done, feedback, attachments)
+
+    def __repr__(self):
+        return '<iserv.BoolTask title="%s" id=%s>' % (self.title, self.id)
+
+    def __str__(self):
+        return '<iserv.BoolTask title="%s" id=%s>' % (self.title, self.id)
