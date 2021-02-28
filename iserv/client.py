@@ -28,8 +28,9 @@ import requests
 from bs4 import BeautifulSoup
 import datetime
 
+from .errors import *
 from .task import Task
-from.iservfile import IServFile
+from .iservfile import IServFile
 
 class Client:
     r"""Dies ist die Verbindung zum IServ.
@@ -66,13 +67,13 @@ class Client:
             response = session.post(self.url + "iserv/app/login", headers=self._headers, data=payload)
             if response.status_code == 200:
                 if response.text.__contains__("Anmeldung fehlgeschlagen!"):
-                    raise Exception("Das angegebene Passwort ist falsch")
+                    raise CredentialsException("Das angegebene Passwort ist falsch")
                 if response.text.__contains__("Account existiert nicht!"):
-                    raise Exception("Der angegebene Benutzer existiert nicht")
+                    raise CredentialsException(f"Der Benutzer {self.username} existiert nicht")
             else:
-                raise Exception("Die angegebene URL führt nicht zu einem IServ")
+                raise IServNotFoundException(self.url)
         except requests.exceptions.ConnectionError:
-            raise Exception("Die angegebene URL konnte nicht abgerufen werden")
+            raise InvalidUrlException(self.url)
         return session
 
     def get_task(self, id):
@@ -125,5 +126,4 @@ class Client:
             else:
                 return None
         except:
-            raise
             return None
