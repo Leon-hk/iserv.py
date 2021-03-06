@@ -112,6 +112,8 @@ class TextTask(Task):
         Die Aufgaben ID.
     start: :class:`datetime.datetime`
         Der Starttermin der Aufgabe.
+        .. warning::
+            Der Starttermin wird nur als Datum angegeben, die Uhrzeit ist nicht gegeben. Dazu bitte die vollwertige :class:`Task` mit `.task()` aufrufen.
     end: :class:`datetime.datetime`
         Der Abgabetermin der Aufgabe.
     tags: List[:class:`str`]

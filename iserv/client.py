@@ -29,6 +29,7 @@ from bs4 import BeautifulSoup
 import datetime
 
 from .errors import *
+from .messengerclient import MessengerClient
 from .task import LiteTask, Task, TextTask, FileTask, BoolTask
 from .iservfile import IServFile
 from .user import LiteUser
@@ -80,6 +81,9 @@ class Client:
         except requests.exceptions.ConnectionError:
             raise InvalidUrlException(self.url)
         return session
+
+    def MessengerClient(self):
+        return MessengerClient(self)
 
     def get_task(self, id):
         """Gibt die Aufgabe mit der ID zurück.

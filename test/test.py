@@ -23,6 +23,14 @@ import iserv
 
 client = iserv.Client(url, username, pw)
 
+messenger = client.MessengerClient()
+
+messenger.run()
+
+#response = client.session.get('https://kwg-hx.de/iserv/messenger/authenticate', headers=client._headers)
+#print(response)
+#print(response.text)
+"""
 tasks = client.get_all_tasks(tags=["chemie"])
 for task in tasks:
     print(task.title)
@@ -41,18 +49,10 @@ print(task.teacher.name)
 print(task.teacher.firstname)
 print(task.teacher.lastname)
 print(task.teacher.username)
+print(task.teacher.picture.url)
 print(task.teacher.mail)
 print(task.tags)
 print(task.start)
 print(task.end)
 print(task.attachments)
-
-
-
-
-
-
-
-
-
-
+"""
