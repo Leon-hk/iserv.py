@@ -55,6 +55,10 @@ class Client:
 
 
     def __init__(self, url, username, password):
+        if not url.startswith("https://"):
+            url = "https://" + url
+        if not url.endswith("/"):
+            url = url + "/"
         self.url = url
         self.username = username
         self.password = password
@@ -82,11 +86,11 @@ class Client:
         Parameters
         -----------
         id: :class:`int`
-            The ID to search for.
+            Die ID der Aufgabe, nach der gesucht werden soll.
         Returns
         --------
         :class:`Task`
-            Die Aufgabe oder ``None``, falls diese nicht gefunden wird
+            Die Aufgabe oder ``None``, falls diese nicht gefunden wird.
         """
         try:
             response = self.session.get(self.url + "iserv/exercise/show/" + str(id), headers=self._headers)
@@ -94,11 +98,11 @@ class Client:
                 soup = BeautifulSoup(response.text, "lxml")
                 title = soup.find("span", {"class": "bc breadcrumb-current"}).text
                 trs = soup.find("tbody", {"class": "bb0"}).find_all("tr")
-                description = soup.find("td", {"class": "text-break-word"})
-                if description.find("div") is None:
-                    description = description.text[1:-1]
-                else:
-                    description = description.text[2:-2]
+                description = soup.find("div", {"class": "text-break-word p-3"}).text
+                while description.startswith("\n"):
+                    description = description[1:]
+                while description.endswith("\n") or description[-1:].encode() == b"\xc2\xa0":
+                    description = description[:-1]
                 teachername = trs[0].find("td").text
                 if teachername.__contains__(","):
                     split = teachername.split(", ")
@@ -137,3 +141,52 @@ class Client:
         except:
             raise
             return None
+
+    def get_all_tasks(self, status="current", tags=None):
+        """Gibt alle gefundenen Aufgaben zurück
+        Parameters
+        -----------
+        status: Optional[:class:`str`]
+            `"all"` für alle Aufgaben,
+            `"current"` für aktuelle Aufgaben,
+            `"past"` für vergangene Aufgaben.
+        tags: Optional[List[:class:`str`]]
+            Eine Liste mit Tags, nach denen die Aufgaben gefiltert werden sollen.
+        Returns
+        --------
+        List[:class:`LiteTask`]
+            Eine Liste der Aufgaben in Form von :class:`LiteTask`s.
+        """
+        try:
+            if status in ["all", "current", "past"]:
+                args = "?filter%5Bstatus%5D=" + status
+                if tags is not None:
+                    tag_list = {}
+                    response = self.session.get(self.url + "iserv/exercise", headers=self._headers)
+                    soup = BeautifulSoup(response.text, "lxml")
+                    sels = soup.find("select", {"class": "form-control selectpicker show-tick", "title" : "Tags"})
+                    for t in sels.find_all("option"):
+                        tag_list[t.text.lower()] = t["value"]
+                    for tag in tags:
+                        if tag.lower() in tag_list:
+                            args += "&filter%5Btag%5D%5B%5D=" + tag_list[tag.lower()]
+                response = self.session.get(self.url + "iserv/exercise" + args, headers=self._headers)
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.find("table", {"id": "crud-table"}).find("tbody")
+                tasks = []
+                for tr in table.find_all("tr"):
+                    tds = tr.find_all("td")
+                    title = tds[0].find("a").text
+                    id = int(tds[0].find("a")["href"].split("/")[-1])
+                    start = datetime.datetime.strptime(tds[1]["data-sort"], '%Y%m%d')
+                    end = datetime.datetime.strptime(tds[2]["data-sort"], '%Y%m%d%H%M%S')
+                    tags = []
+                    for span in tds[3].find_all("span"):
+                        tags.append(span.text)
+                    done = tds[4].find("span") is not None
+                    feedback = tds[5].find("span") is not None
+                    tasks.append(LiteTask(title, id, start, end, tags, done, feedback, client=self))
+                return tasks
+        except:
+            raise
+            return []

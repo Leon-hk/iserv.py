@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from .iservfile import IServFile
+
 class LiteUser:
     """Die Lite-Klasse der Klasse :class:`User`. Sie enthält nur Grundlegende Informationen des Users, um den vollen User zu bekommen ``user()`` ausführen.
 
@@ -53,4 +55,5 @@ class LiteUser:
         self.lastname = lastname
         self.username = username
         self.mail = mail
+        self.picture = IServFile(username, client.url + "iserv/addressbook/public/image/" + username, None, None, None)
         self._client = client
